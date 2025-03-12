@@ -1,0 +1,313 @@
+{
+  "样机/版本外发测试(业务人员：   )": "张佰鹏",
+  "设备型号": "58V",
+  "样机数量": "1",
+  "电源": "24V",
+  "测试时间": "2025-03-12",
+  "样机/版本测试标准": "SV2.00.01 20250226_24V",
+  "产品表面": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "表面涂层/丝印": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "金属部件": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "操作部件": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "纸卷及碳带的安装": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "切刀": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "撕纸": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "接口部件": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "告警标识": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "说明文字": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电源线": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电源线供电（待机电流）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电源线供电（走纸电流）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电源线供电（平均电流）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电源线供电（峰值电流）": {
+    "radiobutton": "NA",
+    "entry": ""
+  },
+  "USB线": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "串口线": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "TTL口": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "网口": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "4G": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "钱箱": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "TEST键": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "Feed走纸键": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "开关+走纸键打自测页": {
+    "radiobutton": "NA",
+    "entry": ""
+  },
+  "开关+走纸键进入DUMP": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "灯色确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "亮度、均匀度确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "串光确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "蜂鸣器响度正常": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "自动吸纸": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "轴侦测（开合盖）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "缺纸": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "取纸侦测": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "纸将尽": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "黑标": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "缝标": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "堵纸": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "拽纸": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "过温": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "切刀回到HOME点": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "打印机回收票据时间符合工具设置票据回收时间": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "驱动打印票据回收": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "按走纸键": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "连续打印多张，切刀后吐纸回收": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "最长可回收纸张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "最短可回收纸张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "自检页样张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "支持指令协议确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "驱动打自检页样张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "驱动打印Windows": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "驱动打印Linux": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "Android打印": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "小票样张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "页模式": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "确认字库": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "标签样张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "腕带样张": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "打印后切纸（半切）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "打印后切纸（全切）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "打印宽度确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "打印速度确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "最大直径": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "最小内径": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "支持纸厚": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "支持纸宽": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "1. 确认LCD安装准确，无偏移、与两边贴合紧凑": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "2. 确认LCD显示正常，色彩无失真": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "3. 确认LCD显示亮度正常，不会出现偏暗或者偏亮现象": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "通过条码扫描指令12 53 01，执行条码扫描。": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "边走纸打印边扫描": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "测试人员": "1",
+  "蓝牙+WiFi": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电源键": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "吐纸回收最小长度": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "吐纸回收最大长度": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "自检页样张\n（最大支持纸卷1254打印50张）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "页模式\n1B 40 1B 4C\n1B 57 00 00 00 00 00 01 80 00 18\n1B 54 00 41 41 41 41 41 41 41 0A\n1B 54 01 42 42 42 42 42 42 42 0A\n1B 54 02 43 43 43 43 43 43 43 0A\n1B 54 03 44 44 44 44 44 44 44 0A\n0C\n1b 64 04\n1B 54 00 41 41 41 41 41 41 41 0A\n1B 54 01 42 42 42 42 42 42 42 0A\n1B 54 02 43 43 43 43 43 43 43 0A\n1B 54 03 44 44 44 44 44 44 44 0A\n1b 64 04": {
+    "radiobutton": "OK",
+    "entry": ""
+  }
+}
