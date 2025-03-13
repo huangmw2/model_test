@@ -14,23 +14,23 @@
     "entry": ""
   },
   "金属部件": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "操作部件": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "纸卷及碳带的安装": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "切刀": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "撕纸": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "接口部件": {
@@ -86,7 +86,7 @@
     "entry": ""
   },
   "钱箱": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "TEST键": {
@@ -210,11 +210,11 @@
     "entry": ""
   },
   "Android打印": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "小票样张": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "页模式": {
@@ -308,6 +308,46 @@
   },
   "页模式\n1B 40 1B 4C\n1B 57 00 00 00 00 00 01 80 00 18\n1B 54 00 41 41 41 41 41 41 41 0A\n1B 54 01 42 42 42 42 42 42 42 0A\n1B 54 02 43 43 43 43 43 43 43 0A\n1B 54 03 44 44 44 44 44 44 44 0A\n0C\n1b 64 04\n1B 54 00 41 41 41 41 41 41 41 0A\n1B 54 01 42 42 42 42 42 42 42 0A\n1B 54 02 43 43 43 43 43 43 43 0A\n1B 54 03 44 44 44 44 44 44 44 0A\n1b 64 04": {
     "radiobutton": "OK",
+    "entry": ""
+  },
+  "1. 确认客户具体版本的需求：\n(1) 定制版本\n(2) Demo版本\n(3) 标准版本\n确认已下载正确的版本": {
+    "radiobutton": "NG",
+    "entry": ""
+  },
+  "2. 确认版本为最新的发布版本，版本号正确": {
+    "radiobutton": "NG",
+    "entry": ""
+  },
+  "3.确认自检页内容完整（打印机型号版本、温度、浓度、语言、字库信息等），字体清晰": {
+    "radiobutton": "NA",
+    "entry": ""
+  },
+  "定位到纸头（纸头侦测）": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "电量不足检测告警": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "充电提醒": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "满电充电结束提醒": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "满电电压确认": {
+    "radiobutton": "OK",
+    "entry": ""
+  },
+  "确认客户设置需求：语言、波特率、侦测功能": {
+    "radiobutton": "NG",
+    "entry": ""
+  },
+  "恢复出厂设置删除所有测试信息（拔出4G卡），按客户需求设置打印机，打印自检页放置打印机内": {
+    "radiobutton": "NG",
     "entry": ""
   }
 }

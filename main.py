@@ -234,16 +234,12 @@ class ExcelHandler:
     "处理Excel表格事件"
     def __init__(self):
         self.source_file = os.path.join(file_dir, "原文件.xlsx")
-        
-        self.search_term = "产品表面"
-        self.found_cell = None
         self.ws = None
-        self.max_cell = 100
-
+        self.wb = None
         self.excel_test_list = {}
         try:
-            wb = load_workbook(self.source_file)
-            self.ws = wb.active  # 获取当前激活的工作表
+            self.wb = load_workbook(self.source_file)
+            self.ws = self.wb.active  # 获取当前激活的工作表
             self.loading_test_data()
         except Exception as e:
             messagebox.showerror("错误", f"加载 Execel 数据失败：{e}")
@@ -257,18 +253,18 @@ class ExcelHandler:
 
         for row in self.ws.iter_rows():
             for cell in row:
-                if cell.value == "测试项目":
+                if cell.value == cell_name:
                     col_idx = cell.column  # 获取列索引（数字）
                     row_idx = cell.row     # 获取行索引
                     break
             if col_idx:
                 break
-
+        if col_idx == None:
+            return None
         # 获取该列 "测试项目" 下面的所有数据
         column_data = [self.ws.cell(row=i, column=col_idx).value for i in range(row_idx + 1, self.ws.max_row + 1) 
                        if self.ws.cell(row=i, column=col_idx).value is not None]
         return column_data
-
     def get_excel_data(self,cell):
         if self.ws :
             cell_value = self.ws[cell].value
@@ -276,56 +272,53 @@ class ExcelHandler:
             cell_value = None
         return cell_value  
     def loading_test_data(self):
-        step = 1
-        if not self.ws:
+        # 遍历表格查找 "测试项目" 的列索引
+        if self.ws == None:
             return 
+        col_idx = None
+        row_idx = None
+
         for row in self.ws.iter_rows():
             for cell in row:
-                if cell.value == self.search_term:
-                    self.found_cell = cell
+                if cell.value == "测试内容":
+                    col_idx = cell.column  # 获取列索引（数字）
+                    row_idx = cell.row     # 获取行索引
                     break
-            if self.found_cell :
+            if col_idx:
                 break
-
-        for i in range(0, self.max_cell):  # 
-            next_row = self.found_cell.row + i * step  # 计算下一行的行号
-            next_cell = self.ws.cell(row=next_row, column=self.found_cell.column)  # 获取单元格
-            if not next_cell.value:
-                break
-            self.excel_test_list[next_cell.coordinate]=next_cell.value
-    def get_topic_range(self,topic_name):
-        step = 1
-        found_cell = None
-        if not self.ws:
-            return None,0
+        if col_idx == None:
+            return 
+        # 获取该列 "测试项目" 下面的所有数据，并存储为字典格式
+        column_data = {
+            self.ws.cell(row=i, column=col_idx).coordinate: self.ws.cell(row=i, column=col_idx).value
+            for i in range(row_idx + 1, self.ws.max_row + 1)
+            if self.ws.cell(row=i, column=col_idx).value is not None
+        }
+        self.excel_test_list = column_data
+        return 
+    def get_topic_range(self, topic_name):
         for row in self.ws.iter_rows():
             for cell in row:
                 if cell.value == topic_name:
-                    found_cell = cell
-                    break
-            if found_cell :
-                break
-        if found_cell == None:
-            return None,0
-        
-       # print(f"found_cell={found_cell}")
-        for i in range(0, self.max_cell):  # 这里 5 只是示例，你可以改成你需要的次数
-            next_row = found_cell.row + i * step  # 计算下一行的行号
-            next_cell = self.ws.cell(row=next_row, column=found_cell.column)  # 获取单元格
-            if  next_cell.value and i != 0:  #如果不为空就break掉 
-                break;    
-           # print(f"next_cell.value={next_cell.value}")
-        if i >=99:
-            return None,0
-        # 提取字母部分
-        column_letter = found_cell.coordinate[0]
-        # 将字母转换为ASCII值并加1
-        new_column_letter = chr(ord(column_letter) + 1)
-        # 提取数字部分
-        row_number = found_cell.coordinate[1:]
-        # 返回新的单元格
-        cell_coordinate = new_column_letter + row_number
-        return cell_coordinate ,i
+                    # 遍历所有合并单元格，检查该单元格是否在合并区域内
+                    for merged_range in self.ws.merged_cells.ranges:
+                        if cell.coordinate in merged_range:
+                            merged_rows = merged_range.max_row - merged_range.min_row + 1  # 计算合并的行数
+                            new_col_index = merged_range.max_col + 1  # 右侧一列
+                            next_column_cell = self.ws.cell(row=merged_range.min_row, column=new_col_index).coordinate
+
+                            return next_column_cell, merged_rows  # 右侧单元格 + 合并行数
+
+                    # 如果该单元格没有合并，则计算右侧一列的新单元格
+                    next_column_cell = self.ws.cell(row=cell.row, column=cell.column + 1).coordinate
+                    return next_column_cell, 1  # 单个单元格的合并行数视为 1
+
+        return None, 0  # 未找到该值
+    def get_ws_wb(self):
+        return self.ws
+    def save_new_excel(self):
+        self.dir_file = os.path.join(file_dir, "测试文件.xlsx")
+        self.wb.save(self.dir_file)
 class EventHandler:
     """事件处理类，专门处理 UI 中的各种事件"""
     def __init__(self):
@@ -467,9 +460,12 @@ class MainUI(tk.Tk):
         self.json_handler = json_data_handler
         self.title("样机出样测试工具")
         self.geometry("800x600+600+300")
-        self.temp_configure_name = self.excel_handler.get_excel_topic_data("测试项目")
+        self.configure_name = self.excel_handler.get_excel_topic_data("测试项目")
+
+        """
         self.configure_name =["确认结构和外观测试","确认各接口","确认按键功能","确认指示灯和蜂鸣器","确认侦测传感器","吐纸回收功能"
-                              ,"确认打印效果及切刀","纸卷适用确认（票据纸）","确认显示屏","确认扫描头","确认设置项"," "]
+                              ,"确认打印效果及切刀","纸卷适用确认（票据纸）","确认显示屏","确认扫描头","确认设置项"," "]        
+        """
         self.create_widgets()
         self.states = ["NA", "OK", "NG"]
         self.current_index = 0  # 初始状态为 "NA"  
@@ -496,7 +492,6 @@ class MainUI(tk.Tk):
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
 
-
         # 绑定鼠标滚轮事件（Windows系统）
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         load_frame = tk.LabelFrame(self.main_frame, text="设置", width=650, height=80)
@@ -508,8 +503,8 @@ class MainUI(tk.Tk):
         save_button = tk.Button(load_frame, text="保存数据", width=10, command=self.save_data_button)
         save_button.place(x=110,y=10)
         #生成样机测试报告
-        creat_report_button = tk.Button(load_frame, text="生成样机测试报告", width=14, command=self.creat_report_button)
-        creat_report_button.place(x=210,y=10)
+        report_button = tk.Button(load_frame, text="生成样机测试报告", width=14, command=self.creat_report_button)
+        report_button.place(x=210,y=10)
 
         basic_frame = tk.LabelFrame(self.main_frame, text="基本信息", width=650, height=200)
         basic_frame.pack(side=tk.TOP, padx=5, pady=5)  
@@ -525,40 +520,20 @@ class MainUI(tk.Tk):
         self.configure_button(frame,"样机/版本确认","尝试获取(USB获取)",self.version_entry) 
 
         self.items_list = list(self.excel_handler.excel_test_list.items()) 
+        if not self.items_list:
+            return 
+        
+        if not self.configure_name:
+            return 
         #print(self.items_list)
-        #结构和外观测试
-        self.appearance_test = []
-        self.configure_test_component(self.configure_name[0],self.appearance_test)
-        #确认各接口
-        self.interface_test = []
-        self.configure_test_component(self.configure_name[1],self.interface_test)
-        #确认按键功能
-        self.key_function_test = []
-        self.configure_test_component(self.configure_name[2],self.key_function_test)
-        #确认指示灯和蜂鸣器
-        self.light_beep_test = []
-        self.configure_test_component(self.configure_name[3],self.light_beep_test)
-        #确认侦测传感器
-        self.sensor_test = []
-        self.configure_test_component(self.configure_name[4],self.sensor_test)
-        #吐纸回收功能
-        self.paper_recovery_test = []
-        self.configure_test_component(self.configure_name[5],self.paper_recovery_test)
-        #确认打印效果及切刀
-        self.print_quality_test = []
-        self.configure_test_component(self.configure_name[6],self.print_quality_test) 
-        #纸卷适用确认（票据纸）
-        self.paper_roll_test = []
-        self.configure_test_component(self.configure_name[7],self.paper_roll_test)
-        #确认显示屏
-        self.display_device_test = []
-        self.configure_test_component(self.configure_name[8],self.display_device_test)
-        #确认扫描头
-        self.scanner_test = []
-        self.configure_test_component(self.configure_name[9],self.scanner_test)
-        #确认设置项
-        self.config_set = []
-        self.configure_test_component(self.configure_name[10],self.config_set)
+        #print(f"len={len(self.configure_name)}")
+        self.test_func_list = []
+        configure_length = len(self.configure_name)
+        
+        for i in range(configure_length):
+            temp = []
+            self.configure_test_component(self.configure_name[i],temp)   
+            self.test_func_list.append(temp)
 
     def load_item_data(self,item_list):
         for item in item_list:
@@ -589,27 +564,9 @@ class MainUI(tk.Tk):
                     commp.insert(0,data)
                 elif widget_class == "TCombobox":  # 如果是 Combobox 组件
                     commp.set(data)
-
-        #结构和外观测试
-        self.load_item_data(self.appearance_test)
-        #确认各接口
-        self.load_item_data(self.interface_test)
-        #确认按键功能
-        self.load_item_data(self.key_function_test)
-        #确认指示灯和蜂鸣器
-        self.load_item_data(self.light_beep_test)
-        #确认侦测传感器
-        self.load_item_data(self.sensor_test)
-        #吐纸回收功能
-        self.load_item_data(self.paper_recovery_test)
-        #确认打印效果及切刀
-        self.load_item_data(self.print_quality_test) 
-        #纸卷适用确认（票据纸）
-        self.load_item_data(self.paper_roll_test)
-        #确认显示屏
-        self.load_item_data(self.display_device_test)
-        #确认扫描头
-        self.load_item_data(self.scanner_test)  
+        totl_len = len(self.test_func_list)
+        for i in range(totl_len):
+            self.load_item_data(self.test_func_list[i])
 
     def save_item_data(self,item_list):
         for item in item_list:
@@ -632,34 +589,31 @@ class MainUI(tk.Tk):
         for i, (key, ui_value) in config.items():
             if key and ui_value:
                 self.json_handler.update_data(key,ui_value)
-        #结构和外观测试
-        self.save_item_data(self.appearance_test)
-        #确认各接口
-        self.save_item_data(self.interface_test)
-        #确认按键功能
-        self.save_item_data(self.key_function_test)
-        #确认指示灯和蜂鸣器
-        self.save_item_data(self.light_beep_test)
-        #确认侦测传感器
-        self.save_item_data(self.sensor_test)
-        #吐纸回收功能
-        self.save_item_data(self.paper_recovery_test)
-        #确认打印效果及切刀
-        self.save_item_data(self.print_quality_test) 
-        #纸卷适用确认（票据纸）
-        self.save_item_data(self.paper_roll_test)
-        #确认显示屏
-        self.save_item_data(self.display_device_test)
-        #确认扫描头
-        self.save_item_data(self.scanner_test)  
+        totl_len = len(self.test_func_list)
+        for i in range(totl_len):
+            self.save_item_data(self.test_func_list[i])
         self.json_handler.write_json()
 
     def creat_report_button(self):
-        for i in range(len(self.appearance_test)):
-            key = self.appearance_test[i][1]
-            radiobutton = self.appearance_test[i][2].get()
-            entry = self.appearance_test[i][3].get()
-            value = {key:{radiobutton,entry}}
+        ws = self.excel_handler.get_ws_wb()
+        # 填入数据
+        length = len(self.test_func_list)
+        for i in range(length):
+            total_len = len(self.test_func_list[i])
+            _list = self.test_func_list[i]
+            for j in range(total_len):
+                key = _list[j][0]
+                radio_value = _list[j][2].get()     
+                column_letter = key[0]
+                row_number = key[1:]
+                # 将列字母转换为 ASCII 值并加 1
+                new_column_letter = chr(ord(column_letter) + 1)
+                # 组合新的单元格坐标
+                new_cell_coordinate = new_column_letter + row_number
+                ws[new_cell_coordinate] = radio_value  # 填入列标题
+
+        # 另存为一个新的 Excel 文件
+        self.excel_handler.save_new_excel()
 
     def configure_button(self,frame,frame_name,_text,_commp):
         self.button_func = {
@@ -702,7 +656,7 @@ class MainUI(tk.Tk):
     def configure_test_component(self,_name,_list):
         #配置测试组件
         start, range_row = self.excel_handler.get_topic_range(_name)
-        #print(f"start={start},range_row={range_row}")
+
         if range_row != 0:
             frame = tk.LabelFrame(self.main_frame, text=_name, width=500, height=200)
             frame.pack(side=tk.TOP, padx=5, pady=5)  
@@ -1028,26 +982,13 @@ class MainUI(tk.Tk):
         self.lock_new_window(modal,parent)  
     #设置all窗口
     def set_all_na_ok_ng(self,name): 
-        _list_radiobutton= {
-            0: self.appearance_test,
-            1: self.interface_test,
-            2: self.key_function_test,
-            3: self.light_beep_test,
-            4: self.sensor_test,
-            5: self.paper_recovery_test,
-            6: self.print_quality_test,
-            7: self.paper_roll_test,
-            8: self.display_device_test,
-            9: self.scanner_test,
-        }
         index = self.configure_name.index(name)
         current_index = (self.current_index) % len(self.states)
         self.current_index = self.current_index + 1
-        ret_list = _list_radiobutton.get(index, None)
-        if ret_list :
-            for i in range(len(ret_list)):
-                ret_list[i][2].set(self.states[current_index])   
-         
+        total_len = len(self.test_func_list[index])
+        _list = self.test_func_list[index]
+        for i in range(total_len):
+            _list[i][2].set(self.states[current_index])   
 
     def _on_mousewheel(self, event):
         # Windows 系统下，event.delta 通常为 120 的倍数
