@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from openpyxl import load_workbook
 from openpyxl.styles import Font
-from openpyxl.styles import Alignment
+from openpyxl.styles import Alignment,PatternFill
 import ctypes
 import os
 import threading
@@ -13,6 +13,7 @@ import serial.tools.list_ports
 import serial
 import json
 from typing import Any, Dict
+from tkinter import filedialog
 # 获取运行目录
 if getattr(sys, 'frozen', False):  # 检测是否是 PyInstaller 打包后的环境
     base_path = sys._MEIPASS
@@ -272,7 +273,7 @@ class ExcelHandler:
             cell_value = None
         return cell_value  
     def loading_test_data(self):
-        # 遍历表格查找 "测试项目" 的列索引
+        # 加载测试内容的数据并存储到列表
         if self.ws == None:
             return 
         col_idx = None
@@ -297,6 +298,7 @@ class ExcelHandler:
         self.excel_test_list = column_data
         return 
     def get_topic_range(self, topic_name):
+        #获取每个测试项目共有几项
         for row in self.ws.iter_rows():
             for cell in row:
                 if cell.value == topic_name:
@@ -314,9 +316,24 @@ class ExcelHandler:
                     return next_column_cell, 1  # 单个单元格的合并行数视为 1
 
         return None, 0  # 未找到该值
-    def get_ws_wb(self):
+    def get_cell_value(self,targer_text):    
+        # 遍历所有单元格查找“序号”
+        target_cell = None
+        for row in self.ws.iter_rows():
+            for cell in row:
+                if cell.value == targer_text:
+                    target_cell = cell
+                    break
+            if target_cell:
+                break
+        if target_cell == None:
+            return None
+        return target_cell.coordinate
+    
+    def get_ws(self):
         return self.ws
     def save_new_excel(self):
+        #保存EXCEL文件
         self.dir_file = os.path.join(file_dir, "测试文件.xlsx")
         self.wb.save(self.dir_file)
 class EventHandler:
@@ -494,7 +511,7 @@ class MainUI(tk.Tk):
 
         # 绑定鼠标滚轮事件（Windows系统）
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        load_frame = tk.LabelFrame(self.main_frame, text="设置", width=650, height=80)
+        load_frame = tk.LabelFrame(self.main_frame, text="设置", width=650, height=130)
         load_frame.pack(side=tk.TOP, padx=5, pady=5)  
         #加载数据按钮
         load_data_button = tk.Button(load_frame, text="加载数据", width=10, command=self.load_data_button)
@@ -505,20 +522,35 @@ class MainUI(tk.Tk):
         #生成样机测试报告
         report_button = tk.Button(load_frame, text="生成样机测试报告", width=14, command=self.creat_report_button)
         report_button.place(x=210,y=10)
+        #生成样机测试报告
+        tk.Label(load_frame, text="生成测试报告路径:", anchor="w").place(x=10,y=50)
+        self.creat_report_path_entry = tk.Entry(load_frame, width=50) 
+        self.creat_report_path_entry.place(x=130,y=50) 
+        tk.Button(load_frame, text="打开目的", command=lambda :self.open_report_path(self.creat_report_path_entry)).place(x=500,y=50) 
+
+        #覆盖样机测试报告
+        tk.Label(load_frame, text="覆盖测试报告路径:", anchor="w").place(x=10,y=80)
+        self.cover_report_path_entry = tk.Entry(load_frame, width=50) 
+        self.cover_report_path_entry.place(x=130,y=80)
+        tk.Button(load_frame, text="打开文件", command=lambda :self.open_report_path(self.cover_report_path_entry)).place(x=500,y=80) 
 
         basic_frame = tk.LabelFrame(self.main_frame, text="基本信息", width=650, height=200)
         basic_frame.pack(side=tk.TOP, padx=5, pady=5)  
-        frame,self.salesman_combobox = self.configure_basic_info(basic_frame,"业务员",self.excel_handler.get_excel_data("B1") ,"样机版本外发测试员:(默认)",1,['庄思峰','张佰鹏'])
-        frame,self.drive_type_entry = self.configure_basic_info(basic_frame,"设备型号",self.excel_handler.get_excel_data("B2"),"设备型号:(默认)",0,None)
+        self.excel_title_data = ["样机/版本外发测试(业务人员：   )","设备型号","测试时间","测试人员","样机数量","电源","样机/版本确认"]
+        frame,self.salesman_combobox = self.configure_basic_info(basic_frame,"业务员" ,self.excel_title_data[0],1,['庄思峰','张佰鹏',
+                                        '陈江','何万海','李杨','刑鹏','郭瑞丽','陈小兰','翁佳坤','刘芳芳','熊韵','游佳佳','曾玉春'])
+        frame,self.drive_type_entry = self.configure_basic_info(basic_frame,"设备型号",self.excel_title_data[1],0,None)
         self.configure_button(frame,"设备型号","尝试获取(USB获取)",self.drive_type_entry)
-        frame,self.test_time_entry = self.configure_basic_info(basic_frame,"测试时间",self.excel_handler.get_excel_data("B3") ,"测试时间:(默认)",0,None)
+        frame,self.test_time_entry = self.configure_basic_info(basic_frame,"测试时间",self.excel_title_data[2],0,None)
         self.configure_button(frame,"测试时间","当前时间",self.test_time_entry)
-        frame,self.machine_quantity_entry = self.configure_basic_info(basic_frame,"样机数量",self.excel_handler.get_excel_data("B4"),"样机数量:(默认)",0,"1")
+        frame,self.test_person_combobox = self.configure_basic_info(basic_frame,"测试人员",self.excel_title_data[3],1,['测试组','张明钰','王琪','刘挺挺','黄明委'])
+        frame,self.machine_quantity_entry = self.configure_basic_info(basic_frame,"样机数量",self.excel_title_data[4],0,"1")
         self.configure_button(frame,"样机数量","↑",self.machine_quantity_entry)
-        frame,self.power_source_combobox = self.configure_basic_info(basic_frame,"电源",self.excel_handler.get_excel_data("B5"),"电源:(默认)",1,['24V','12V','9V'])
-        frame,self.version_entry = self.configure_basic_info(basic_frame,"样机/版本确认",self.excel_handler.get_excel_data("B6"),"样机/版本确认:(默认)",0,None)
+        frame,self.power_source_combobox = self.configure_basic_info(basic_frame,"电源",self.excel_title_data[5],1,['24V','12V','9V'])
+        frame,self.version_entry = self.configure_basic_info(basic_frame,"样机/版本确认",self.excel_title_data[6],0,None)
         self.configure_button(frame,"样机/版本确认","尝试获取(USB获取)",self.version_entry) 
 
+        self.test_func_list = []
         self.items_list = list(self.excel_handler.excel_test_list.items()) 
         if not self.items_list:
             return 
@@ -527,14 +559,14 @@ class MainUI(tk.Tk):
             return 
         #print(self.items_list)
         #print(f"len={len(self.configure_name)}")
-        self.test_func_list = []
+        
         configure_length = len(self.configure_name)
         
         for i in range(configure_length):
             temp = []
             self.configure_test_component(self.configure_name[i],temp)   
             self.test_func_list.append(temp)
-
+    
     def load_item_data(self,item_list):
         for item in item_list:
             key = item[1]
@@ -548,12 +580,13 @@ class MainUI(tk.Tk):
     def load_data_button(self):
         data = None
         config = {
-            "业务员": (self.excel_handler.get_excel_data("B1"),1,self.salesman_combobox),
-            "设备型号": (self.excel_handler.get_excel_data("B2"),0,self.drive_type_entry),
-            "测试时间": (self.excel_handler.get_excel_data("B3"),0,self.test_time_entry),
-            "样机数量": (self.excel_handler.get_excel_data("B4"),0,self.machine_quantity_entry),
-            "电源"    : (self.excel_handler.get_excel_data("B5"),1,self.power_source_combobox),
-            "版本确认": (self.excel_handler.get_excel_data("B6"),0,self.version_entry),
+            "业务员": (self.excel_title_data[0],1,self.salesman_combobox),
+            "设备型号": (self.excel_title_data[1],0,self.drive_type_entry),
+            "测试时间": (self.excel_title_data[2],0,self.test_time_entry),
+            "测试人员": (self.excel_title_data[3],1,self.test_person_combobox),
+            "样机数量": (self.excel_title_data[4],0,self.machine_quantity_entry),
+            "电源"    : (self.excel_title_data[5],1,self.power_source_combobox),
+            "版本确认": (self.excel_title_data[6],0,self.version_entry),
         }
         for i, (key, flag, commp) in config.items():
             data = self.json_handler.find_data(key)
@@ -564,6 +597,8 @@ class MainUI(tk.Tk):
                     commp.insert(0,data)
                 elif widget_class == "TCombobox":  # 如果是 Combobox 组件
                     commp.set(data)
+        if not self.test_func_list:
+            return 
         totl_len = len(self.test_func_list)
         for i in range(totl_len):
             self.load_item_data(self.test_func_list[i])
@@ -579,23 +614,70 @@ class MainUI(tk.Tk):
 
     def save_data_button(self):
         config = {
-            "config1" : (self.excel_handler.get_excel_data("B1"),self.salesman_combobox.get()),
-            "config2" : (self.excel_handler.get_excel_data("B2"),self.drive_type_entry.get()),
-            "config3" : (self.excel_handler.get_excel_data("B3"),self.test_time_entry.get()),
-            "config4" : (self.excel_handler.get_excel_data("B4"),self.machine_quantity_entry.get()),
-            "config5" : (self.excel_handler.get_excel_data("B5"),self.power_source_combobox.get()),
-            "config6" : (self.excel_handler.get_excel_data("B6"),self.version_entry.get()),
+            "config1" : (self.excel_title_data[0],self.salesman_combobox.get()),
+            "config2" : (self.excel_title_data[1],self.drive_type_entry.get()),
+            "config3" : (self.excel_title_data[2],self.test_time_entry.get()),
+            "config4" : (self.excel_title_data[3],self.test_person_combobox.get()),
+            "config5" : (self.excel_title_data[4],self.machine_quantity_entry.get()),
+            "config6" : (self.excel_title_data[5],self.power_source_combobox.get()),
+            "config7" : (self.excel_title_data[6],self.version_entry.get()),
         }
         for i, (key, ui_value) in config.items():
-            if key and ui_value:
+            if key:
                 self.json_handler.update_data(key,ui_value)
+        
+        if not self.test_func_list:
+            return 
+        
         totl_len = len(self.test_func_list)
         for i in range(totl_len):
             self.save_item_data(self.test_func_list[i])
         self.json_handler.write_json()
+        messagebox.showinfo("提示", "保存数据成功")
+   
+    def open_report_path(self,_entry):
+        file_path = filedialog.askopenfilename(filetypes=[("Excel 文件", "*.xlsx")])
+        if file_path:  # 确保用户选择了文件
+            _entry.delete(0, tk.END)  # 清空已有内容
+            _entry.insert(0, file_path)  # 插入文件路径    
 
+    def change_cell_value(self,old_cell,_row,_column):
+        if not old_cell:
+            return
+        column_letter = old_cell[0]
+        row_number = old_cell[1:]
+        new_column_letter = chr(ord(column_letter) + _column)
+        new_row_letter = int(row_number) + _row
+        new_cell_coordinate = new_column_letter + str(new_row_letter)
+        return new_cell_coordinate
+               
     def creat_report_button(self):
-        ws = self.excel_handler.get_ws_wb()
+        if not self.test_func_list:
+            return 
+        ws = self.excel_handler.get_ws()
+        # 定义 Excel 数据的映射关系 (title_data 索引, row_offset, col_offset, new_value)
+        data_map = {
+            0: (0, 0, f"样机/版本外发测试(业务人员：{self.salesman_combobox.get()})"),
+            1: (0, 2, self.drive_type_entry.get()),
+            2: (0, 2, self.test_time_entry.get()),
+            3: (0, 2, self.test_person_combobox.get()),
+            4: (0, 2, self.machine_quantity_entry.get()),
+            5: (0, 2, self.power_source_combobox.get()),
+            6: (0, 2, self.version_entry.get()),
+        }
+
+        # 统一处理 Excel 写入逻辑
+        for index, (row_offset, col_offset, new_value) in data_map.items():
+            cell = self.change_cell_value(
+                self.excel_handler.get_cell_value(self.excel_title_data[index]), row_offset, col_offset
+            )
+            ws[cell] = new_value   
+
+        # 设置单元格填充颜色（黄色）
+        yello_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+        alignment = Alignment(horizontal="center", vertical="center")
+        # 设置字体颜色为红色
+        red_font = Font(color="FF0000")  # 红色的RGB代码是"FF0000"
         # 填入数据
         length = len(self.test_func_list)
         for i in range(length):
@@ -604,16 +686,16 @@ class MainUI(tk.Tk):
             for j in range(total_len):
                 key = _list[j][0]
                 radio_value = _list[j][2].get()     
-                column_letter = key[0]
-                row_number = key[1:]
-                # 将列字母转换为 ASCII 值并加 1
-                new_column_letter = chr(ord(column_letter) + 1)
-                # 组合新的单元格坐标
-                new_cell_coordinate = new_column_letter + row_number
+                new_cell_coordinate = self.change_cell_value(key,0,1)
                 ws[new_cell_coordinate] = radio_value  # 填入列标题
-
+                if radio_value == "NA":
+                    ws[new_cell_coordinate].fill = yello_fill
+                if radio_value == "NG":
+                    ws[new_cell_coordinate].font = red_font
+                ws[new_cell_coordinate].alignment = alignment
         # 另存为一个新的 Excel 文件
         self.excel_handler.save_new_excel()
+        messagebox.showinfo("提示", "创建测试报告成功")
 
     def configure_button(self,frame,frame_name,_text,_commp):
         self.button_func = {
@@ -631,14 +713,10 @@ class MainUI(tk.Tk):
             button = tk.Button(frame, text=_text, command=lambda :self.button_func[frame_name](_commp))
             button.pack(side=tk.LEFT, padx=(20,5), pady=5)  
             
-    def configure_basic_info(self, basic_frame,frame_name,_cell_name,default_cell_name,comp_type,default_value):
+    def configure_basic_info(self, basic_frame,frame_name,cell_name,comp_type,default_value):
         frame = tk.LabelFrame(basic_frame, text=frame_name, width=650, height=50)
         frame.pack(side=tk.TOP, padx=5, pady=5)
         frame.pack_propagate(False)  # 禁止 LabelFrame 自动调整大小 
-        if _cell_name:
-            cell_name = _cell_name
-        else :
-            cell_name = default_cell_name
         tk.Label(frame, text=cell_name, anchor="w").pack(side=tk.LEFT, padx=5, pady=5) 
         if comp_type == 0:
             entry = tk.Entry(frame, width=30)

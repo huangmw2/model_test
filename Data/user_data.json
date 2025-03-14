@@ -1,9 +1,9 @@
 {
-  "样机/版本外发测试(业务人员：   )": "张佰鹏",
-  "设备型号": "58V",
+  "样机/版本外发测试(业务人员：   )": "郭瑞丽",
+  "设备型号": "",
   "样机数量": "1",
   "电源": "24V",
-  "测试时间": "2025-03-12",
+  "测试时间": "2025-03-14",
   "样机/版本测试标准": "SV2.00.01 20250226_24V",
   "产品表面": {
     "radiobutton": "OK",
@@ -14,23 +14,23 @@
     "entry": ""
   },
   "金属部件": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
   },
   "操作部件": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
   },
   "纸卷及碳带的安装": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
   },
   "切刀": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "撕纸": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "接口部件": {
@@ -62,7 +62,7 @@
     "entry": ""
   },
   "电源线供电（峰值电流）": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "USB线": {
@@ -86,7 +86,7 @@
     "entry": ""
   },
   "钱箱": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "TEST键": {
@@ -98,7 +98,7 @@
     "entry": ""
   },
   "开关+走纸键打自测页": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "开关+走纸键进入DUMP": {
@@ -210,11 +210,11 @@
     "entry": ""
   },
   "Android打印": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "小票样张": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "页模式": {
@@ -285,7 +285,7 @@
     "radiobutton": "OK",
     "entry": ""
   },
-  "测试人员": "1",
+  "测试人员": "刘挺挺",
   "蓝牙+WiFi": {
     "radiobutton": "OK",
     "entry": ""
@@ -311,15 +311,15 @@
     "entry": ""
   },
   "1. 确认客户具体版本的需求：\n(1) 定制版本\n(2) Demo版本\n(3) 标准版本\n确认已下载正确的版本": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
   },
   "2. 确认版本为最新的发布版本，版本号正确": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
   },
   "3.确认自检页内容完整（打印机型号版本、温度、浓度、语言、字库信息等），字体清晰": {
-    "radiobutton": "NA",
+    "radiobutton": "OK",
     "entry": ""
   },
   "定位到纸头（纸头侦测）": {
@@ -343,11 +343,12 @@
     "entry": ""
   },
   "确认客户设置需求：语言、波特率、侦测功能": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
   },
   "恢复出厂设置删除所有测试信息（拔出4G卡），按客户需求设置打印机，打印自检页放置打印机内": {
-    "radiobutton": "NG",
+    "radiobutton": "OK",
     "entry": ""
-  }
+  },
+  "样机/版本确认": ""
 }
