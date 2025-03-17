@@ -319,11 +319,14 @@ class ExcelHandler:
     def get_cell_value(self,targer_text):    
         # 遍历所有单元格查找“序号”
         target_cell = None
+        if self.ws is None:
+            print("Error: 保存后重新加载 Excel 失败")
         for row in self.ws.iter_rows():
             for cell in row:
                 if cell.value == targer_text:
                     target_cell = cell
                     break
+            print(f"cell.value={cell.value},targer_text={targer_text}")
             if target_cell:
                 break
         if target_cell == None:
@@ -332,10 +335,21 @@ class ExcelHandler:
     
     def get_ws(self):
         return self.ws
-    def save_new_excel(self):
+    def save_new_excel(self,path,drive=None,time=None,salesman=None):
         #保存EXCEL文件
-        self.dir_file = os.path.join(file_dir, "测试文件.xlsx")
+        excel_path = base_path
+        if not path:
+            excel_path = base_path
+        else :
+            excel_path = path
+        file_name = f"/{drive} 样机版本测试报告_{time}({salesman}).xlsx"
+        print(f"fil name {file_name}")
+        self.dir_file = excel_path + file_name
         self.wb.save(self.dir_file)
+        # 重新加载 Excel，避免读取 None
+        self.wb.close()  # 关闭当前 Workbook，释放资源
+        self.wb = load_workbook(self.source_file, data_only=True)
+        self.ws = self.wb.active 
 class EventHandler:
     """事件处理类，专门处理 UI 中的各种事件"""
     def __init__(self):
@@ -478,11 +492,6 @@ class MainUI(tk.Tk):
         self.title("样机出样测试工具")
         self.geometry("800x600+600+300")
         self.configure_name = self.excel_handler.get_excel_topic_data("测试项目")
-
-        """
-        self.configure_name =["确认结构和外观测试","确认各接口","确认按键功能","确认指示灯和蜂鸣器","确认侦测传感器","吐纸回收功能"
-                              ,"确认打印效果及切刀","纸卷适用确认（票据纸）","确认显示屏","确认扫描头","确认设置项"," "]        
-        """
         self.create_widgets()
         self.states = ["NA", "OK", "NG"]
         self.current_index = 0  # 初始状态为 "NA"  
@@ -526,13 +535,13 @@ class MainUI(tk.Tk):
         tk.Label(load_frame, text="生成测试报告路径:", anchor="w").place(x=10,y=50)
         self.creat_report_path_entry = tk.Entry(load_frame, width=50) 
         self.creat_report_path_entry.place(x=130,y=50) 
-        tk.Button(load_frame, text="打开目的", command=lambda :self.open_report_path(self.creat_report_path_entry)).place(x=500,y=50) 
+        tk.Button(load_frame, text="打开目录", command=lambda :self.open_report_path(self.creat_report_path_entry,1)).place(x=500,y=50) 
 
         #覆盖样机测试报告
         tk.Label(load_frame, text="覆盖测试报告路径:", anchor="w").place(x=10,y=80)
         self.cover_report_path_entry = tk.Entry(load_frame, width=50) 
         self.cover_report_path_entry.place(x=130,y=80)
-        tk.Button(load_frame, text="打开文件", command=lambda :self.open_report_path(self.cover_report_path_entry)).place(x=500,y=80) 
+        tk.Button(load_frame, text="打开文件", command=lambda :self.open_report_path(self.cover_report_path_entry,0)).place(x=500,y=80) 
 
         basic_frame = tk.LabelFrame(self.main_frame, text="基本信息", width=650, height=200)
         basic_frame.pack(side=tk.TOP, padx=5, pady=5)  
@@ -635,26 +644,34 @@ class MainUI(tk.Tk):
         self.json_handler.write_json()
         messagebox.showinfo("提示", "保存数据成功")
    
-    def open_report_path(self,_entry):
-        file_path = filedialog.askopenfilename(filetypes=[("Excel 文件", "*.xlsx")])
-        if file_path:  # 确保用户选择了文件
+    def open_report_path(self,_entry,flag):
+        path = None
+        if flag == 1:
+            path = filedialog.askdirectory()  # 打开目录选择对话框
+        else :
+            path = filedialog.askopenfilename(filetypes=[("Excel 文件", "*.xlsx")])
+        if path:  # 确保用户选择了文件
             _entry.delete(0, tk.END)  # 清空已有内容
-            _entry.insert(0, file_path)  # 插入文件路径    
+            _entry.insert(0, path)  # 插入文件路径    
 
     def change_cell_value(self,old_cell,_row,_column):
         if not old_cell:
+            print(f"old is none")
             return
         column_letter = old_cell[0]
         row_number = old_cell[1:]
         new_column_letter = chr(ord(column_letter) + _column)
         new_row_letter = int(row_number) + _row
         new_cell_coordinate = new_column_letter + str(new_row_letter)
+        print(f"new_cell_coordinate={new_cell_coordinate}")
         return new_cell_coordinate
                
     def creat_report_button(self):
         if not self.test_func_list:
             return 
         ws = self.excel_handler.get_ws()
+        if ws is None:
+            print("Error: 保存后重新加载 Excel 失败")
         # 定义 Excel 数据的映射关系 (title_data 索引, row_offset, col_offset, new_value)
         data_map = {
             0: (0, 0, f"样机/版本外发测试(业务人员：{self.salesman_combobox.get()})"),
@@ -668,9 +685,12 @@ class MainUI(tk.Tk):
 
         # 统一处理 Excel 写入逻辑
         for index, (row_offset, col_offset, new_value) in data_map.items():
+            print(f"11111{self.excel_title_data[index]}")
             cell = self.change_cell_value(
                 self.excel_handler.get_cell_value(self.excel_title_data[index]), row_offset, col_offset
             )
+            print(f"cell={cell}, type={type(cell)}")
+
             ws[cell] = new_value   
 
         # 设置单元格填充颜色（黄色）
@@ -694,7 +714,11 @@ class MainUI(tk.Tk):
                     ws[new_cell_coordinate].font = red_font
                 ws[new_cell_coordinate].alignment = alignment
         # 另存为一个新的 Excel 文件
-        self.excel_handler.save_new_excel()
+        path = self.creat_report_path_entry.get()
+        drive = self.drive_type_entry.get()
+        test_time = self.test_time_entry.get()
+        salesman = self.salesman_combobox.get()
+        self.excel_handler.save_new_excel(path,drive,test_time,salesman)
         messagebox.showinfo("提示", "创建测试报告成功")
 
     def configure_button(self,frame,frame_name,_text,_commp):

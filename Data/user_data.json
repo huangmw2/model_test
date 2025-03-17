@@ -1,108 +1,108 @@
 {
-  "样机/版本外发测试(业务人员：   )": "郭瑞丽",
-  "设备型号": "",
-  "样机数量": "1",
-  "电源": "24V",
-  "测试时间": "2025-03-14",
+  "样机/版本外发测试(业务人员：   )": "李杨",
+  "设备型号": "P-230H",
+  "样机数量": "3",
+  "电源": "12V",
+  "测试时间": "2025-03-17",
   "样机/版本测试标准": "SV2.00.01 20250226_24V",
   "产品表面": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "表面涂层/丝印": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "金属部件": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "操作部件": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "纸卷及碳带的安装": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "切刀": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "撕纸": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "接口部件": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "告警标识": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "说明文字": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "电源线": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "电源线供电（待机电流）": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "电源线供电（走纸电流）": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "电源线供电（平均电流）": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "电源线供电（峰值电流）": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "USB线": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "串口线": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "TTL口": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "网口": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "4G": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "钱箱": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "TEST键": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "Feed走纸键": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "开关+走纸键打自测页": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "开关+走纸键进入DUMP": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "灯色确认": {
@@ -285,13 +285,13 @@
     "radiobutton": "OK",
     "entry": ""
   },
-  "测试人员": "刘挺挺",
+  "测试人员": "测试组",
   "蓝牙+WiFi": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "电源键": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "吐纸回收最小长度": {
@@ -311,15 +311,15 @@
     "entry": ""
   },
   "1. 确认客户具体版本的需求：\n(1) 定制版本\n(2) Demo版本\n(3) 标准版本\n确认已下载正确的版本": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "2. 确认版本为最新的发布版本，版本号正确": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "3.确认自检页内容完整（打印机型号版本、温度、浓度、语言、字库信息等），字体清晰": {
-    "radiobutton": "OK",
+    "radiobutton": "NG",
     "entry": ""
   },
   "定位到纸头（纸头侦测）": {
@@ -327,19 +327,19 @@
     "entry": ""
   },
   "电量不足检测告警": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "充电提醒": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "满电充电结束提醒": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "满电电压确认": {
-    "radiobutton": "OK",
+    "radiobutton": "NA",
     "entry": ""
   },
   "确认客户设置需求：语言、波特率、侦测功能": {
@@ -350,5 +350,5 @@
     "radiobutton": "OK",
     "entry": ""
   },
-  "样机/版本确认": ""
+  "样机/版本确认": "PC1754"
 }
