@@ -1,19 +1,16 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from openpyxl import load_workbook
 from openpyxl.styles import Font
 from openpyxl.styles import Alignment,PatternFill
-import ctypes
 import os
-import threading
-import time
 import sys
 from tkinter import Toplevel
-import serial.tools.list_ports
-import serial
-import json
-from typing import Any, Dict
 from tkinter import filedialog
+from package.logger import logger_init,log_message
+from package.user_data import JsonDataHandler
+from package.excel_handler import ExcelHandler
+from package.event_handler import EventHandler
+from package.config import CONFIG
 # 获取运行目录
 if getattr(sys, 'frozen', False):  # 检测是否是 PyInstaller 打包后的环境
     base_path = sys._MEIPASS
@@ -23,463 +20,7 @@ else:
 #file_path = r"Data\.."
 file_dir = os.path.join(base_path, "Data")
 
-class JsonDataHandler:
-    def __init__(self):
-        self.user_data_path = os.path.join(file_dir,"user_data.json")
-        self.user_data = self.read_json(self.user_data_path)
-        #print(f"self.user_data={self.user_data}")
-    def read_json(self,file_path: str) -> Dict[str, Any]:
-        """读取JSON文件内容"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"文件 {file_path} 不存在")
-            return {}
-        except json.JSONDecodeError:
-            print(f"文件 {file_path} 格式错误")
-            return {}
-        
-    def write_json(self) -> None:
-        # 先清空文件内容
-        self.clear_json()
 
-        with open(self.user_data_path, 'w', encoding='utf-8') as f:
-            json.dump(self.user_data, f, ensure_ascii=False, indent=2)
-        print(f"数据已保存至 {self.user_data_path}")
-
-    def clear_json(self):
-        open(self.user_data_path, 'w').close()
-
-    def update_data(self, key: str, value: Any) -> None:
-        """更新 self.user_data 中的内容，不立即写入文件"""
-        self.user_data[key] = value  # 先存入内存
-        print(f"数据已更新到内存: {key} = {value}") 
-
-    def find_data(self, key: str) -> Any:
-        """查找 self.user_data 中的某个键值"""
-        return self.user_data.get(key, None)
-
-    def delete_data(self, key: str) -> None:
-        """从 self.user_data 中删除某个键值"""
-        if key in self.user_data:
-            del self.user_data[key]
-            print(f"数据 {key} 已从内存中删除")
-        else:
-            print(f"键 {key} 不存在")
-
-class USBComm:
-    def __init__(self):
-        "初始化，检查时否找到dll库"
-        self.dll_flag = False
-        self.rtn_data = None
-        self.open_buffer_usb = None
-        self.set_buffer_usb = None
-        if self.get_dll_path():
-            self.join_dll()
-        else :
-            pass
-
-    def get_dll_path(self):
-        "获取dll库路径，如果不存在返回flase"
-        DLL_Name = r"DLL\CsnPrinterLibs.dll"
-        
-        self.dll_path = os.path.join(base_path, DLL_Name)
-        if os.path.exists(self.dll_path):
-            self.dll_flag = True
-            return True
-        else :
-            log = "没有找到共享库的路径; 当前路径:{}".format(self.dll_path)
-            print(f"log = {log}")
-            return False
-        
-    def join_dll(self):
-        "加载USB的接口"
-        self.mylib = ctypes.CDLL(self.dll_path)
-        #USB 的接口
-        self.mylib.Port_EnumUSB.argtypes = [ctypes.c_char_p, ctypes.c_size_t]
-        self.mylib.Port_EnumUSB.restype = ctypes.c_size_t
-        self.mylib.Port_OpenUSBIO.argtypes = [ctypes.c_char_p]
-        self.mylib.Port_OpenUSBIO.restype = ctypes.c_void_p
-        self.mylib.Port_SetPort.argtypes = [ctypes.c_void_p]
-        self.mylib.Port_SetPort.restype = ctypes.c_bool
-        self.mylib.Port_ClosePort.argtypes = [ctypes.c_void_p]
-        self.mylib.Pos_SelfTest.restype = ctypes.c_bool
-        #self.buffer_usb = ctypes.create_string_buffer(self.buffer_size)
-        self.mylib.WriteData.argtypes = [ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_ulong]
-        self.mylib.WriteData.restype = ctypes.c_int
-        self.mylib.Read.argtypes = [ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_ulong]
-        self.mylib.Read.restype = ctypes.c_int
-        self.mylib.ReadData.argtypes = [ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_ulong]
-        self.mylib.ReadData.restype = ctypes.c_int
-        #打印图片
-        self.mylib.Pos_ImagePrint.argtypes = [ctypes.c_wchar_p, ctypes.c_int, ctypes.c_int]
-        self.mylib.Pos_ImagePrint.restype = ctypes.c_bool 
-
-    def receive_thread(self):
-        buf_size = 1024
-        buf =  ctypes.create_string_buffer(buf_size)  # 创建字符串缓冲区
-        count =  ctypes.c_size_t(buf_size)
-        timeout = ctypes.c_ulong(2)  # 超时设置（例如 5000 毫秒）
-        buf_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ubyte))
-        self.mylib.Pos_Reset()
-        self.mylib.ReadInit()
-        result = self.mylib.ReadData(buf_ptr, count, timeout)
-        data_str = b''
-        if result > 0:
-            data_str = buf.raw[:result]
-            hex_representation = ' '.join(f'{byte:02X}' for byte in data_str)  # 转换为十六进制字符串
-            self.rtn_data = hex_representation
-        else:
-            print("没有数据返回")  
-              
-
-    #打开USB接口
-    def open_usb(self):
-        buffer_size = 256
-        buffer_usb = ctypes.create_string_buffer(buffer_size)
-        if not self.dll_flag :
-            return False
-        ctypes.memset(buffer_usb, 0, buffer_size)
-        result_length = self.mylib.Port_EnumUSB(buffer_usb, buffer_size)
-        if not result_length:
-            messagebox.showerror("错误", "没有找到USB设备")
-            return False
-           
-        self.open_buffer_usb = self.mylib.Port_OpenUSBIO(buffer_usb)  
-        if not self.open_buffer_usb :
-            messagebox.showerror("错误", "打开USB端口失败")
-            return False    
-        self.set_buffer_usb = self.mylib.Port_SetPort(self.open_buffer_usb)  
-        if not self.set_buffer_usb :
-            messagebox.showerror("错误", "设置USB端口失败")
-            return False
-        return True
-    #关闭usb接口
-    def close_usb(self):
-        if self.set_buffer_usb:
-            self.set_buffer_usb = self.mylib.Port_ClosePort(self.open_buffer_usb) 
-        return self.rtn_data
-    
-    def recevice_data(self,data):
-        ret = self.open_usb()
-        if ret == False:
-            return None
-        if isinstance(data, str):
-            encoded_data = data.encode('cp936')
-        else :
-            encoded_data = data
-        #创建一个接收线程
-        read_thread = threading.Thread(target=self.receive_thread)
-        read_thread.start()
-        time.sleep(0.1)
-        #写入状态数据
-        buf =  ctypes.create_string_buffer(bytes(encoded_data))  # 创建字符串缓冲区
-        count =  ctypes.c_size_t(len(encoded_data))  # 数据长度
-        timeout = ctypes.c_ulong(5000)  # 超时设置（例如 5000 毫秒）
-        buf_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ubyte))
-        self.rtn_data = None
-        #循环个3次
-        for i in range(3):
-            self.mylib.WriteData(buf_ptr, count, timeout)
-            if self.rtn_data:
-                break
-            time.sleep(0.1)
-        #销毁线程
-        self.mylib.ReadClose()
-        read_thread.join()
-        self.close_usb()
-        return self.rtn_data
-    
-    def send_long_data(self,data):
-        
-        if isinstance(data, str):
-            encoded_data = data.encode('cp936')
-        else :
-            encoded_data = data
-            
-        buf =  ctypes.create_string_buffer(bytes(encoded_data))  # 创建字符串缓冲区
-        count =  ctypes.c_size_t(len(encoded_data))  # 数据长度
-        timeout = ctypes.c_ulong(5000)  # 超时设置（例如 5000 毫秒）
-        buf_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ubyte))
-        result = self.mylib.WriteData(buf_ptr, count, timeout)
-        return result
-    
-    def send_hex_data(self,data):
-        ret = self.open_usb()
-        if ret == False:
-            return False
-        if isinstance(data, str):
-            encoded_data = data.encode('cp936')
-        else :
-            encoded_data = data
-        
-        buf =  ctypes.create_string_buffer(bytes(encoded_data))  # 创建字符串缓冲区
-        count =  ctypes.c_size_t(len(encoded_data))  # 数据长度
-        timeout = ctypes.c_ulong(5000)  # 超时设置（例如 5000 毫秒）
-        buf_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ubyte))
-        result = self.mylib.WriteData(buf_ptr, count, timeout)   
-        if result < 0:
-            messagebox.showerror("错误", "USB端口发送数据失败")
-        self.close_usb()
-        return True
-    
-    def print_image(self,image_path,image_size):
-        ret = self.open_usb()
-        if ret == False:
-            return False
-        ret = self.mylib.Pos_ImagePrint(image_path,image_size,0)
-        self.close_usb()
-        return ret
-class ExcelHandler:
-    "处理Excel表格事件"
-    def __init__(self):
-        self.source_file = os.path.join(file_dir, "原文件.xlsx")
-        self.ws = None
-        self.wb = None
-        self.excel_test_list = {}
-        try:
-            self.wb = load_workbook(self.source_file)
-            self.ws = self.wb.active  # 获取当前激活的工作表
-            self.loading_test_data()
-        except Exception as e:
-            messagebox.showerror("错误", f"加载 Execel 数据失败：{e}")
-        
-    def get_excel_topic_data(self,cell_name):
-        # 遍历表格查找 "测试项目" 的列索引
-        if self.ws == None:
-            return None
-        col_idx = None
-        row_idx = None
-
-        for row in self.ws.iter_rows():
-            for cell in row:
-                if cell.value == cell_name:
-                    col_idx = cell.column  # 获取列索引（数字）
-                    row_idx = cell.row     # 获取行索引
-                    break
-            if col_idx:
-                break
-        if col_idx == None:
-            return None
-        # 获取该列 "测试项目" 下面的所有数据
-        column_data = [self.ws.cell(row=i, column=col_idx).value for i in range(row_idx + 1, self.ws.max_row + 1) 
-                       if self.ws.cell(row=i, column=col_idx).value is not None]
-        return column_data
-    def get_excel_data(self,cell):
-        if self.ws :
-            cell_value = self.ws[cell].value
-        else :
-            cell_value = None
-        return cell_value  
-    def loading_test_data(self):
-        # 加载测试内容的数据并存储到列表
-        if self.ws == None:
-            return 
-        col_idx = None
-        row_idx = None
-
-        for row in self.ws.iter_rows():
-            for cell in row:
-                if cell.value == "测试内容":
-                    col_idx = cell.column  # 获取列索引（数字）
-                    row_idx = cell.row     # 获取行索引
-                    break
-            if col_idx:
-                break
-        if col_idx == None:
-            return 
-        # 获取该列 "测试项目" 下面的所有数据，并存储为字典格式
-        column_data = {
-            self.ws.cell(row=i, column=col_idx).coordinate: self.ws.cell(row=i, column=col_idx).value
-            for i in range(row_idx + 1, self.ws.max_row + 1)
-            if self.ws.cell(row=i, column=col_idx).value is not None
-        }
-        self.excel_test_list = column_data
-        return 
-    def get_topic_range(self, topic_name):
-        #获取每个测试项目共有几项
-        for row in self.ws.iter_rows():
-            for cell in row:
-                if cell.value == topic_name:
-                    # 遍历所有合并单元格，检查该单元格是否在合并区域内
-                    for merged_range in self.ws.merged_cells.ranges:
-                        if cell.coordinate in merged_range:
-                            merged_rows = merged_range.max_row - merged_range.min_row + 1  # 计算合并的行数
-                            new_col_index = merged_range.max_col + 1  # 右侧一列
-                            next_column_cell = self.ws.cell(row=merged_range.min_row, column=new_col_index).coordinate
-
-                            return next_column_cell, merged_rows  # 右侧单元格 + 合并行数
-
-                    # 如果该单元格没有合并，则计算右侧一列的新单元格
-                    next_column_cell = self.ws.cell(row=cell.row, column=cell.column + 1).coordinate
-                    return next_column_cell, 1  # 单个单元格的合并行数视为 1
-
-        return None, 0  # 未找到该值
-    def get_cell_value(self,targer_text):    
-        # 遍历所有单元格查找“序号”
-        target_cell = None
-        if self.ws is None:
-            print("Error: 保存后重新加载 Excel 失败")
-        for row in self.ws.iter_rows():
-            for cell in row:
-                if cell.value == targer_text:
-                    target_cell = cell
-                    break
-            print(f"cell.value={cell.value},targer_text={targer_text}")
-            if target_cell:
-                break
-        if target_cell == None:
-            return None
-        return target_cell.coordinate
-    
-    def get_ws(self):
-        return self.ws
-    def save_new_excel(self,path,drive=None,time=None,salesman=None):
-        #保存EXCEL文件
-        excel_path = base_path
-        if not path:
-            excel_path = base_path
-        else :
-            excel_path = path
-        file_name = f"/{drive} 样机版本测试报告_{time}({salesman}).xlsx"
-        print(f"fil name {file_name}")
-        self.dir_file = excel_path + file_name
-        self.wb.save(self.dir_file)
-        # 重新加载 Excel，避免读取 None
-        self.wb.close()  # 关闭当前 Workbook，释放资源
-        self.wb = load_workbook(self.source_file, data_only=True)
-        self.ws = self.wb.active 
-class EventHandler:
-    """事件处理类，专门处理 UI 中的各种事件"""
-    def __init__(self):
-        self.usb_send_data = USBComm()
-
-    #获取文件数据
-    def get_file_data(self,file_name):
-        file_path = os.path.join(file_dir,file_name)
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                data = file.read()
-                return data  # 读取内容并返回
-        except (FileNotFoundError, IOError) as e:
-            messagebox.showerror("错误", f"无法读取文件 {file_path}: {e}") 
-    #获取产品信息
-    def get_driver_product(self,_entry=None):
-        byte_data = bytes.fromhex("1D 49 43")
-        data_hex_str = self.usb_send_data.recevice_data(byte_data)
-        if data_hex_str == None:
-            return
-        bytes_data = bytes.fromhex(data_hex_str)
-        result_str = bytes_data.decode('utf-8')
-        _entry.delete(0, tk.END)
-        _entry.insert(0,result_str)
-        
-        #print(f"data={result_str}")
-    #测试时间
-    def get_now_time(self,_entry):
-        current_date = time.strftime("%Y-%m-%d")  # 格式化时间
-        _entry.delete(0, tk.END)
-        _entry.insert(0, current_date)  # 插入到 Entry
-    #样机数量
-    def change_machine_num(self,paras,_entry):
-        value = _entry.get()
-        num = int(value)
-        if paras == "add":
-            num = num + 1
-            _entry.delete(0, tk.END)
-            _entry.insert(0, str(num))  # 插入到 Entry
-        else :
-            if num > 1:
-                num = num -1
-            _entry.delete(0, tk.END)
-            _entry.insert(0, str(num))  # 插入到 Entry      
-    #获取版本信息
-    def get_version_inf(self,_entry):
-        byte_data = bytes.fromhex("1D 49 41")
-        data_hex_str = self.usb_send_data.recevice_data(byte_data)
-        if data_hex_str == None:
-            return 
-        bytes_data = bytes.fromhex(data_hex_str)
-        result_str = bytes_data.decode('utf-8')
-        _entry.delete(0, tk.END)
-        _entry.insert(0,result_str)
-        #print(f"data={result_str}")
-    #切刀测试（发送全切，半切数据）
-    def cut_test(self):
-        byte_data = bytes.fromhex("1b 40 1b 61  00 1b 24 00  00 1b 4d 00  1b 45 00 1b  2d 00 1b 7b  00 1d 42 00  1b 56 00 1b  39 01 1d 21  00 48 61 6c  66 43 75 74  20 50 61 70  65 72 0a 1b 64 0a 1b 6d 1b 40 1b 61  00 1b 24 00  00 1b 4d 00  1b 45 00 1b  2d 00 1b 7b  00 1d 42 00  1b 56 00 1b  39 01 1d 21  00 46 75 6c  6c 43 75 74  20 50 61 70  65 72 0a  1b 64 0a 1b 69 ")
-        self.usb_send_data.send_hex_data(byte_data)
-    def feed_paper_test(self):
-        byte_data = bytes.fromhex("0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a 0a")
-        self.usb_send_data.send_hex_data(byte_data)     
-    #平均电流（发送打印速度的数据）
-    def avg_I_test(self,_radiobutton):
-        value = _radiobutton.get()
-        print(f"value={value}")
-        if value == "2寸":
-            data = self.get_file_data("twoinches_speed.hex")
-        else :
-            data = self.get_file_data("threeinches_speed.hex")
-        byte_data = bytes.fromhex(data)
-        self.usb_send_data.send_hex_data(byte_data)
-    #峰值电流（发送黑块图片数据）
-    def black_print(self,_combbox):
-        value = _combbox.get()
-        print(f"value={value}")
-        image_path =  os.path.join(file_dir,"black.bmp")
-        self.usb_send_data.print_image(image_path,int(value))
-    #usb接口测试
-    def usb_comm_test(self):
-        data = self.get_file_data("usb_data_test.hex")
-        byte_data = bytes.fromhex(data)
-        self.usb_send_data.send_hex_data(byte_data)
-    #列出串口接口
-    def list_serial_com(self):
-        ports = serial.tools.list_ports.comports()
-        available_ports = [port.device for port in ports]
-        return available_ports
-    #设置波特率
-    def set_baud_rate(self,value):
-        #状态查询
-        data = "02 00 30 00  00 00 00 00  00 00 00 00  08 00 3a 00  01 02 04 08  10 20 40 80  ff"
-        byte_data = bytes.fromhex(data)
-        self.usb_send_data.send_hex_data(byte_data)
-        time.sleep(0.05)
-        if value == 9600:
-            data = "02 00 81 00  00 00 00 00  00 00 00 00  01 00 82 00  00 00 "
-        else :
-            data = "02 00 81 00  00 00 00 00  00 00 00 00  01 00 82 00  04 04 "
-        byte_data = bytes.fromhex(data)
-        self.usb_send_data.send_hex_data(byte_data)
-    #串口打印测试
-    def serial_comm_test(self,com,baud_rate,flow_ctrl):
-        print("串口接口测试")
-        print(f"com={com},baud_rate={baud_rate},flow_ctrl={flow_ctrl}")
-
-    def ttl_comm_test(self):
-        print("TTL接口测试")
-    def ethernet_comm_test(self,ip,port,para):
-        print("网口接口测试")
-    def _4g_comm_test(self):
-        print("4g接口测试")
-    def cashbox_comm_test(self):
-        print("钱箱接口测试")
-        byte_data = bytes.fromhex("1b 70 00 14 3c")
-        ret = self.usb_send_data.send_hex_data(byte_data)
-        if ret == False:
-            return
-        byte_data = bytes.fromhex("1b 70 01 14 3c")
-        ret = self.usb_send_data.send_hex_data(byte_data)
-    def cut_cmd(self):
-        byte_data = bytes.fromhex("1b 69")
-        self.usb_send_data.send_hex_data(byte_data)   
-    def print_selftest(self):
-        byte_data = bytes.fromhex()
-        self.usb_send_data.send_hex_data(byte_data)             
-    def print_page_mode(self):
-        data = self.get_file_data("page_mode.hex")
-        byte_data = bytes.fromhex(data)
-        self.usb_send_data.send_hex_data(byte_data)  
 class MainUI(tk.Tk):
     """
         根据样机出样的测试用例来设计UI
@@ -489,12 +30,12 @@ class MainUI(tk.Tk):
         self.event_handler = event_handler  # 接收事件处理类的实例
         self.excel_handler = excel_handler
         self.json_handler = json_data_handler
-        self.title("样机出样测试工具")
-        self.geometry("800x600+600+300")
-        self.configure_name = self.excel_handler.get_excel_topic_data("测试项目")
+        self.title(CONFIG['main_window_title'])
+        self.geometry(CONFIG['main_window_geometry'])
+        self.configure_name = self.excel_handler.get_excel_topic_data(CONFIG['test_modules'])
         self.create_widgets()
-        self.states = ["NA", "OK", "NG"]
-        self.current_index = 0  # 初始状态为 "NA"  
+        self.states = CONFIG['test_states']
+        self.current_index = 0   
 
     def create_widgets(self):
         # 创建一个主容器框架
@@ -517,47 +58,37 @@ class MainUI(tk.Tk):
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
-
         # 绑定鼠标滚轮事件（Windows系统）
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        load_frame = tk.LabelFrame(self.main_frame, text="设置", width=650, height=130)
+
+        load_frame = tk.LabelFrame(self.main_frame, text="设置", width=730, height=130)
         load_frame.pack(side=tk.TOP, padx=5, pady=5)  
-        #加载数据按钮
-        load_data_button = tk.Button(load_frame, text="加载数据", width=10, command=self.load_data_button)
-        load_data_button.place(x=10,y=10)
-        #保存数据按钮
-        save_button = tk.Button(load_frame, text="保存数据", width=10, command=self.save_data_button)
-        save_button.place(x=110,y=10)
-        #生成样机测试报告
-        report_button = tk.Button(load_frame, text="生成样机测试报告", width=14, command=self.creat_report_button)
-        report_button.place(x=210,y=10)
-        #生成样机测试报告
-        tk.Label(load_frame, text="生成测试报告路径:", anchor="w").place(x=10,y=50)
+        tk.Button(load_frame, text=CONFIG['load_data_button_name'], width=10, command=self.load_data_button).place(x=10,y=10)
+        tk.Button(load_frame, text=CONFIG['save_data_button_name'], width=10, command=self.save_data_button).place(x=110,y=10)
+        tk.Button(load_frame, text=CONFIG['creat_report_button_name'], width=14, command=self.creat_report_button).place(x=210,y=10)
+        tk.Label(load_frame, text=CONFIG['creat_report_entry_name'], anchor="w").place(x=10,y=50)
         self.creat_report_path_entry = tk.Entry(load_frame, width=50) 
         self.creat_report_path_entry.place(x=130,y=50) 
-        tk.Button(load_frame, text="打开目录", command=lambda :self.open_report_path(self.creat_report_path_entry,1)).place(x=500,y=50) 
-
-        #覆盖样机测试报告
-        tk.Label(load_frame, text="覆盖测试报告路径:", anchor="w").place(x=10,y=80)
+        tk.Button(load_frame, text=CONFIG['open_dir_button_name'], command=lambda :self.open_report_path(self.creat_report_path_entry,1)).place(x=500,y=50) 
+        tk.Label(load_frame, text=CONFIG['cover_report_entry_name'], anchor="w").place(x=10,y=80)
         self.cover_report_path_entry = tk.Entry(load_frame, width=50) 
         self.cover_report_path_entry.place(x=130,y=80)
-        tk.Button(load_frame, text="打开文件", command=lambda :self.open_report_path(self.cover_report_path_entry,0)).place(x=500,y=80) 
+        tk.Button(load_frame, text=CONFIG['open_file_button_name'], command=lambda :self.open_report_path(self.cover_report_path_entry,0)).place(x=500,y=80) 
 
-        basic_frame = tk.LabelFrame(self.main_frame, text="基本信息", width=650, height=200)
+        basic_frame = tk.LabelFrame(self.main_frame, text=CONFIG['basic_frame_name'], width=650, height=200)
         basic_frame.pack(side=tk.TOP, padx=5, pady=5)  
-        self.excel_title_data = ["样机/版本外发测试(业务人员：   )","设备型号","测试时间","测试人员","样机数量","电源","样机/版本确认"]
-        frame,self.salesman_combobox = self.configure_basic_info(basic_frame,"业务员" ,self.excel_title_data[0],1,['庄思峰','张佰鹏',
-                                        '陈江','何万海','李杨','刑鹏','郭瑞丽','陈小兰','翁佳坤','刘芳芳','熊韵','游佳佳','曾玉春'])
+        self.excel_title_data = CONFIG['excel_title_list']
+        frame,self.salesman_combobox = self.configure_basic_info(basic_frame,"业务员" ,self.excel_title_data[0],1,CONFIG['salesman_list'])
         frame,self.drive_type_entry = self.configure_basic_info(basic_frame,"设备型号",self.excel_title_data[1],0,None)
-        self.configure_button(frame,"设备型号","尝试获取(USB获取)",self.drive_type_entry)
+        self.configure_button(frame,"设备型号",CONFIG['usb_comm_button_name'],self.drive_type_entry)
         frame,self.test_time_entry = self.configure_basic_info(basic_frame,"测试时间",self.excel_title_data[2],0,None)
         self.configure_button(frame,"测试时间","当前时间",self.test_time_entry)
-        frame,self.test_person_combobox = self.configure_basic_info(basic_frame,"测试人员",self.excel_title_data[3],1,['测试组','张明钰','王琪','刘挺挺','黄明委'])
+        frame,self.test_person_combobox = self.configure_basic_info(basic_frame,"测试人员",self.excel_title_data[3],1,CONFIG['test_person_list'])
         frame,self.machine_quantity_entry = self.configure_basic_info(basic_frame,"样机数量",self.excel_title_data[4],0,"1")
         self.configure_button(frame,"样机数量","↑",self.machine_quantity_entry)
-        frame,self.power_source_combobox = self.configure_basic_info(basic_frame,"电源",self.excel_title_data[5],1,['24V','12V','9V'])
+        frame,self.power_source_combobox = self.configure_basic_info(basic_frame,"电源",self.excel_title_data[5],1,CONFIG['power_list'])
         frame,self.version_entry = self.configure_basic_info(basic_frame,"样机/版本确认",self.excel_title_data[6],0,None)
-        self.configure_button(frame,"样机/版本确认","尝试获取(USB获取)",self.version_entry) 
+        self.configure_button(frame,"样机/版本确认",CONFIG['usb_comm_button_name'],self.version_entry) 
 
         self.test_func_list = []
         self.items_list = list(self.excel_handler.excel_test_list.items()) 
@@ -566,8 +97,6 @@ class MainUI(tk.Tk):
         
         if not self.configure_name:
             return 
-        #print(self.items_list)
-        #print(f"len={len(self.configure_name)}")
         
         configure_length = len(self.configure_name)
         
@@ -655,15 +184,11 @@ class MainUI(tk.Tk):
             _entry.insert(0, path)  # 插入文件路径    
 
     def change_cell_value(self,old_cell,_row,_column):
-        if not old_cell:
-            print(f"old is none")
-            return
         column_letter = old_cell[0]
         row_number = old_cell[1:]
         new_column_letter = chr(ord(column_letter) + _column)
         new_row_letter = int(row_number) + _row
         new_cell_coordinate = new_column_letter + str(new_row_letter)
-        print(f"new_cell_coordinate={new_cell_coordinate}")
         return new_cell_coordinate
                
     def creat_report_button(self):
@@ -685,29 +210,31 @@ class MainUI(tk.Tk):
 
         # 统一处理 Excel 写入逻辑
         for index, (row_offset, col_offset, new_value) in data_map.items():
-            print(f"11111{self.excel_title_data[index]}")
             cell = self.change_cell_value(
                 self.excel_handler.get_cell_value(self.excel_title_data[index]), row_offset, col_offset
             )
-            print(f"cell={cell}, type={type(cell)}")
-
             ws[cell] = new_value   
 
         # 设置单元格填充颜色（黄色）
         yello_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
         alignment = Alignment(horizontal="center", vertical="center")
-        # 设置字体颜色为红色
         red_font = Font(color="FF0000")  # 红色的RGB代码是"FF0000"
-        # 填入数据
+        new_cell_value = None
         length = len(self.test_func_list)
         for i in range(length):
             total_len = len(self.test_func_list[i])
             _list = self.test_func_list[i]
             for j in range(total_len):
                 key = _list[j][0]
-                radio_value = _list[j][2].get()     
+                radio_value = _list[j][2].get()
+                describe = _list[j][3].get() 
+                
                 new_cell_coordinate = self.change_cell_value(key,0,1)
-                ws[new_cell_coordinate] = radio_value  # 填入列标题
+                if radio_value == "NONE":
+                    new_cell_value  = describe
+                else :
+                    new_cell_value  = f"{radio_value}\r\n{describe}"
+                ws[new_cell_coordinate] = new_cell_value  # 填入列标题
                 if radio_value == "NA":
                     ws[new_cell_coordinate].fill = yello_fill
                 if radio_value == "NG":
@@ -738,7 +265,7 @@ class MainUI(tk.Tk):
             button.pack(side=tk.LEFT, padx=(20,5), pady=5)  
             
     def configure_basic_info(self, basic_frame,frame_name,cell_name,comp_type,default_value):
-        frame = tk.LabelFrame(basic_frame, text=frame_name, width=650, height=50)
+        frame = tk.LabelFrame(basic_frame, text=frame_name, width=730, height=50)
         frame.pack(side=tk.TOP, padx=5, pady=5)
         frame.pack_propagate(False)  # 禁止 LabelFrame 自动调整大小 
         tk.Label(frame, text=cell_name, anchor="w").pack(side=tk.LEFT, padx=5, pady=5) 
@@ -760,7 +287,7 @@ class MainUI(tk.Tk):
         start, range_row = self.excel_handler.get_topic_range(_name)
 
         if range_row != 0:
-            frame = tk.LabelFrame(self.main_frame, text=_name, width=500, height=200)
+            frame = tk.LabelFrame(self.main_frame, text=_name, width=730, height=200)
             frame.pack(side=tk.TOP, padx=5, pady=5)  
             frame.pack_propagate(False)  # 禁止 LabelFrame 自动调整大小  
             items_index = 0
@@ -812,7 +339,7 @@ class MainUI(tk.Tk):
 
         # 为状态变量添加追踪：当变量改变时自动调用 update_bg
         status_var.trace_add("write", lambda *args: update_bg())
-        for text, value in [("NA", "NA"), ("OK", "OK"), ("NG", "NG")]:
+        for text, value in [("NA", "NA"), ("OK", "OK"), ("NG", "NG"), ("NONE", "NONE")]:
             rb = tk.Radiobutton(frame, text=text, variable=status_var, 
                         value=value, font=font_style,  command=update_bg)
             rb.grid(row=_row, column=_column, **grid_config)
@@ -1097,12 +624,14 @@ class MainUI(tk.Tk):
         self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
 if __name__ == "__main__":
+    #创建logger
+    logger_init(base_path)
     # 创建事件处理器实例
-    event_handler = EventHandler()
+    event_handler = EventHandler(base_path,file_dir)
     # 创建Excel处理
-    excel_handler = ExcelHandler()
+    excel_handler = ExcelHandler(base_path,file_dir)
     # 加载json数据
-    json_data_handler = JsonDataHandler()
+    json_data_handler = JsonDataHandler(file_dir)
     # 创建 UI 实例，并将事件处理器传递给 UI
     app = MainUI(event_handler,excel_handler,json_data_handler)
     app.mainloop()
